@@ -28,7 +28,7 @@ void GenerateSignalPWM(struct Frame& F)
 
         unsigned char o = s >= r ? UCHAR_MAX : 0; // PWM
 
-        //printf("%d %f %f\n",  o, s, r);
+        printf("%d %f %f\n",  o, s, r);
         F.w[i] = o;
     }
     F.l = _byteswap_ushort(T); // Length is Big Endian
@@ -78,6 +78,8 @@ int main()
     std::ifstream file("D:\\Captures\\data.cap", std::ios::binary | std::ios::ate);
     std::streamsize size = file.tellg();
     file.seekg(0, std::ios::beg);
+    
+    if (size == -1) return 0; // Exit if no device connected
 
     std::vector<struct Frame> buffer(size/sizeof(struct Frame));
     if (file.read((char *)buffer.data(), size))
