@@ -53,8 +53,23 @@ void GenerateSignalDirac(struct Frame& F)
     F.l = _byteswap_ushort(T); // Big Endian
 }
 
+void GenerateSignalSine(struct Frame& F)
+{
+    // sine
+    const int T = 300; // points
+
+    for (int i = 0; i < T; i++)
+    {
+        double s = 0.75*((sin((double)i / (double)T * 2.0 * M_PI) + 1.0) / 2.0); //sine 0 to 0.75
+
+        F.w[i] = (double)UCHAR_MAX * s;
+    }
+    F.l = _byteswap_ushort(T); // Big Endian
+}
+
 void GenerateSignal(struct Frame& F)
 {
+    // Call only one func here!
     GenerateSignalPWM(F);
 }
 
