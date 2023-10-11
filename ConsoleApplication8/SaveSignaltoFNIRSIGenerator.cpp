@@ -18,20 +18,22 @@ void GenerateSignalPWM(struct Frame& F)
 {
     // PWM
     const int T = 300; // points
-    const int RAMPS_RES = 15; // triangle points
+    const int RAMPS_RES = 20; // triangle points, eg: 10, 12, 20
 
     for (int i = 0; i < T; i++)
     {
         double s = (RAMPS_RES - 1) * ((sin((double)i / (double)T * 2.0 * M_PI) + 1.0) / 2.0) / (double)RAMPS_RES + 0.5 / (double)RAMPS_RES; //sine
-        double r = (double(i % RAMPS_RES) / (double)RAMPS_RES); //ramp
+        double r = (double(i % RAMPS_RES) / (double)RAMPS_RES); //ramp 0.0 to (RAMPS_RES-1)/RAMPS_RES
         r = 2.0 * (r < 0.5 ? r : 1.0 - r); // turn rump into triangle
 
-        unsigned char o = s >= r ? UCHAR_MAX : 0; // PWM
+        unsigned char o = s > r ? UCHAR_MAX : 0; // PWM
+        
+        //unsigned char o = round(r * (double)UCHAR_MAX*0.75); // Triangle
 
-        printf("%d %f %f\n",  o, s, r);
+        //printf("%d %f %f\n",  o, s, r);
         F.w[i] = o;
     }
-    F.l = _byteswap_ushort(T); // Length is Big Endian
+    F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
 
 void GenerateSignalHiLo(struct Frame& F)
@@ -40,9 +42,9 @@ void GenerateSignalHiLo(struct Frame& F)
     const int T = 300; // points
     for (int i = 0; i < T; i++)
     {
-        F.w[i] = i%2* UCHAR_MAX;
+        F.w[i] = i%2? UCHAR_MAX : 0;
     }
-    F.l = _byteswap_ushort(T); // Big Endian
+    F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
 
 void GenerateSignalDirac(struct Frame& F)
@@ -50,7 +52,7 @@ void GenerateSignalDirac(struct Frame& F)
     const int T = 300; // points
     // Just one single point in the middle
     F.w[T/2] = UCHAR_MAX;
-    F.l = _byteswap_ushort(T); // Big Endian
+    F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
 
 void GenerateSignalSine(struct Frame& F)
@@ -60,11 +62,40 @@ void GenerateSignalSine(struct Frame& F)
 
     for (int i = 0; i < T; i++)
     {
-        double s = 0.75*((sin((double)i / (double)T * 2.0 * M_PI) + 1.0) / 2.0); //sine 0 to 0.75
+        double s = 0.75*((sin((double)i / (double)T * 2.0 * M_PI) + 1.0) / 2.0); //sine 0 to 0.75 as FNIRSI clamps signal over that range
 
-        F.w[i] = (double)UCHAR_MAX * s;
+        F.w[i] = (double)UCHAR_MAX * (s + 0.5 / (double)UCHAR_MAX);
     }
-    F.l = _byteswap_ushort(T); // Big Endian
+    F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
+}
+
+void GenerateSignalAMSinModulated300Peaks(struct Frame& F)
+{
+    // sine
+    const int T = 300; // points
+
+    for (int i = 0; i < T; i++)
+    {
+        double s = 0.75 *(0.5 + ((i % 2) ? -1.0 : 1.0) * abs(sin((double)i / (double)T * M_PI)/2.0));
+        
+        F.w[i] = (double)UCHAR_MAX * (s + 0.5 / (double)UCHAR_MAX);
+    }
+    F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
+}
+
+void GenerateSignalAM(struct Frame& F)
+{
+    // sine
+    const int T = 300; // points
+    const int t = 30;   // carrier sine points
+
+    for (int i = 0; i < T; i++)
+    {
+        double s = 0.75 * (0.5 + (sin((double)i / (double)t * 2.0 * M_PI)) * abs(sin((double)i / (double)T * M_PI) / 2.0));
+
+        F.w[i] = (double)UCHAR_MAX * (s + 0.5 / (double)UCHAR_MAX);
+    }
+    F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
 
 void GenerateSignal(struct Frame& F)
