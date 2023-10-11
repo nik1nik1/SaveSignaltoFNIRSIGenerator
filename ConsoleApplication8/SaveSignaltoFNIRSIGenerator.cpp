@@ -64,7 +64,7 @@ void GenerateSignalSine(struct Frame& F)
     {
         double s = 0.75*((sin((double)i / (double)T * 2.0 * M_PI) + 1.0) / 2.0); //sine 0 to 0.75 as FNIRSI clamps signal over that range
 
-        F.w[i] = (double)UCHAR_MAX * (s + 0.5 / (double)UCHAR_MAX);
+        F.w[i] = (unsigned char) round((double)UCHAR_MAX * s);
     }
     F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
@@ -78,7 +78,7 @@ void GenerateSignalAMSinModulated300Peaks(struct Frame& F)
     {
         double s = 0.75 *(0.5 + ((i % 2) ? -1.0 : 1.0) * abs(sin((double)i / (double)T * M_PI)/2.0));
         
-        F.w[i] = (double)UCHAR_MAX * (s + 0.5 / (double)UCHAR_MAX);
+        F.w[i] = (unsigned char) round((double)UCHAR_MAX * s);
     }
     F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
@@ -93,7 +93,7 @@ void GenerateSignalAM(struct Frame& F)
     {
         double s = 0.75 * (0.5 + (sin((double)i / (double)t * 2.0 * M_PI)) * abs(sin((double)i / (double)T * M_PI) / 2.0));
 
-        F.w[i] = (double)UCHAR_MAX * (s + 0.5 / (double)UCHAR_MAX);
+        F.w[i] = (unsigned char) round((double)UCHAR_MAX * s);
     }
     F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
@@ -112,14 +112,15 @@ int main()
     
     if (size == -1) return 0; // Exit if no device connected
 
-    std::vector<struct Frame> buffer(size/sizeof(struct Frame));
+    const size_t nFrames = size / sizeof(struct Frame);
+    std::vector<struct Frame> buffer(nFrames);
     if (file.read((char *)buffer.data(), size))
     {
-        for (int j = 0; ; j++)
+        for (size_t j = 0; j< nFrames; j++)
         {
             if (buffer[j].l == 0)
             {
-                buffer[j].n = _byteswap_ushort(j+1);
+                buffer[j].n = _byteswap_ushort((unsigned short)j+1);
 
                 GenerateSignal(buffer[j]);
 
@@ -135,13 +136,19 @@ int main()
                 std::vector<unsigned short> num_table_sysRbuffer(num_table_sysRSize/2);
                 if (num_table_sysR.read((char*)num_table_sysRbuffer.data(), num_table_sysRSize))
                 {
-                    for (int k = 2; ; k++)
+                    unsigned short nFrame = j + 1;
+                    for (int k = 2; k < num_table_sysRSize/2; k++)
                     {
-                        if (num_table_sysRbuffer[k] == 0)
+                        if (num_table_sysRbuffer[k] <= j + 1)
                         {
-                            num_table_sysRbuffer[0] = k - 1;
-                            for (int l = 0; l < k; l++) num_table_sysRbuffer[l+2] = k-1-l;
-                            break;
+                            unsigned short tnFrame = num_table_sysRbuffer[k];
+                            num_table_sysRbuffer[k] = nFrame;
+                            if (tnFrame == 0) {
+                                num_table_sysRbuffer[0]++; // Update the count of Captures
+                                //num_table_sysRbuffer[1] = j + 1; // Load Capture into generator
+                                break;
+                            }
+                            else nFrame = tnFrame;
                         }
                     }
                     
