@@ -22,7 +22,7 @@ void GenerateSignalPWM(struct Frame& F)
 
     for (int i = 0; i < T; i++)
     {
-        double s = (RAMPS_RES - 1) * ((sin((double)i / (double)T * 2.0 * M_PI) + 1.0) / 2.0) / (double)RAMPS_RES + 0.5 / (double)RAMPS_RES; //sine
+        double s = (RAMPS_RES - 0.5) * ((sin((double)i / (double)T * 2.0 * M_PI) + 1.0) / 2.0) / (double)RAMPS_RES; //sine
         double r = (double(i % RAMPS_RES) / (double)RAMPS_RES); //ramp 0.0 to (RAMPS_RES-1)/RAMPS_RES
         r = 2.0 * (r < 0.5 ? r : 1.0 - r); // turn rump into triangle
 
@@ -34,6 +34,28 @@ void GenerateSignalPWM(struct Frame& F)
         F.w[i] = o;
     }
     F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
+}
+
+void GenerateSignalPWM4Inverter(struct Frame& F)
+{
+    // PWM like Pure sine inverter would output before filter
+    const int T = 300; // points
+    const int RAMPS_RES = 20; // triangle points, eg: 10, 12, 20
+
+    for (int i = 0; i < T; i++)
+    {
+        double s = (RAMPS_RES - 0.5) * (sin((double)i / (double)T * 2.0 * M_PI)) / (double)RAMPS_RES; //sine
+        double r = (double(i % RAMPS_RES) / (double)RAMPS_RES); //ramp 0.0 to (RAMPS_RES-1)/RAMPS_RES
+        r = 2.0 * (r < 0.5 ? r : 1.0 - r); // turn rump into triangle
+
+        unsigned char o = s > r ? UCHAR_MAX : (-s > r? 0 : 96); // where 96 is round(0.75*UCHAR_MAX/2.0)
+
+        //unsigned char o = round(r * (double)UCHAR_MAX*0.75); // Triangle
+
+        //printf("%d %f %f\n",  o, s, r);
+        F.w[i] = o;
+    }
+    F.l = _byteswap_ushort(T + 1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
 
 void GenerateSignalHiLo(struct Frame& F)
@@ -97,7 +119,7 @@ void GenerateSignalFM(struct Frame& F)
     const int t = 12;  // carrier sine points.
 
     const double Ac = 1.0;    // Carrier Amplitude
-    const double Bdev = 20.0; // Modulated deviation. Value close to carrier points. Low values makes modulation barely visible on scope.
+    const double Bdev = 20.0; // Modulated deviation. Too Low values makes modulation barely visible on scope.
 
     for (int i = 0; i < T; i++)
     {
