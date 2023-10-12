@@ -89,9 +89,14 @@ void GenerateSignalAM(struct Frame& F)
     const int T = 300; // points
     const int t = 30;   // carrier sine points
 
+    const double Ac = 0.52; // Carrier Amplitude
+    const double Am = 0.48; // Modulated Amplitude
+    // where Am+Ac <= 1.0, otherwise signal will clamp
+
     for (int i = 0; i < T; i++)
     {
-        double s = 0.75 * (0.5 + (sin((double)i / (double)t * 2.0 * M_PI)) * abs(sin((double)i / (double)T * M_PI) / 2.0));
+        double s = (Ac + Am * cos((double)i / (double)T * M_PI*2.0)) * cos((double)i / (double)t * M_PI*2.0) ; // AM -1.0 to 1.0
+        s = 0.75 * (1.0 + s) / 2.0; // AM 0.0 to 0.75
 
         F.w[i] = (unsigned char) round((double)UCHAR_MAX * s);
     }
@@ -101,7 +106,7 @@ void GenerateSignalAM(struct Frame& F)
 void GenerateSignal(struct Frame& F)
 {
     // Call only one func here!
-    GenerateSignalPWM(F);
+    GenerateSignalAM(F);
 }
 
 int main()
