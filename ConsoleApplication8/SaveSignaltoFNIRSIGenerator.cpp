@@ -38,7 +38,7 @@ void GenerateSignalPWM(struct Frame& F)
 
 void GenerateSignalHiLo(struct Frame& F)
 {
-    // Interleaved Max and Min samples
+    // Interleaved Max and Min samples. Let get freq up to 90MHz at (600kHz -1) * 300 points
     const int T = 300; // points
     for (int i = 0; i < T; i++)
     {
@@ -49,6 +49,7 @@ void GenerateSignalHiLo(struct Frame& F)
 
 void GenerateSignalDirac(struct Frame& F)
 {
+    // Single pulse in the middle
     const int T = 300; // points
     // Just one single point in the middle
     F.w[T/2] = UCHAR_MAX;
@@ -69,28 +70,14 @@ void GenerateSignalSine(struct Frame& F)
     F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
 
-void GenerateSignalAMSinModulated300Peaks(struct Frame& F)
-{
-    // sine
-    const int T = 300; // points
-
-    for (int i = 0; i < T; i++)
-    {
-        double s = 0.75 *(0.5 + ((i % 2) ? -1.0 : 1.0) * abs(sin((double)i / (double)T * M_PI)/2.0));
-        
-        F.w[i] = (unsigned char) round((double)UCHAR_MAX * s);
-    }
-    F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
-}
-
 void GenerateSignalAM(struct Frame& F)
 {
-    // sine
-    const int T = 300; // points
-    const int t = 30;   // carrier sine points
+    // AM
+    const int T = 300; // total points, equal to modulated sine points.
+    const int t = 2;   // carrier sine points. Set 2 to get max carrier freq. Set 15 to see low carier freq.
 
-    const double Ac = 0.52; // Carrier Amplitude
-    const double Am = 0.48; // Modulated Amplitude
+    const double Ac = 0.51; // Carrier Amplitude
+    const double Am = 0.49; // Modulated Amplitude
     // where Am+Ac <= 1.0, otherwise signal will clamp
 
     for (int i = 0; i < T; i++)
