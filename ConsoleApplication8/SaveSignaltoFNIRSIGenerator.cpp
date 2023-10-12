@@ -90,6 +90,25 @@ void GenerateSignalAM(struct Frame& F)
     F.l = _byteswap_ushort(T+1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
 }
 
+void GenerateSignalFM(struct Frame& F)
+{
+    // FM
+    const int T = 300; // total points, equal to modulated sine points.
+    const int t = 12;  // carrier sine points.
+
+    const double Ac = 1.0;    // Carrier Amplitude
+    const double Bdev = 20.0; // Modulated deviation. Value close to carrier points. Low values makes modulation barely visible on scope.
+
+    for (int i = 0; i < T; i++)
+    {
+        double s = Ac * sin((double)i / (double)t * M_PI * 2.0  + Bdev * sin((double)i / (double)T * M_PI * 2.0)) ; // FM -1.0 to 1.0
+        s = 0.75 * (1.0 + s) / 2.0; // AM 0.0 to 0.75
+
+        F.w[i] = (unsigned char)round((double)UCHAR_MAX * s);
+    }
+    F.l = _byteswap_ushort(T + 1); // Big Endian. Scope needs +1, otherwise it cuts last sample.
+}
+
 void GenerateSignal(struct Frame& F)
 {
     // Call only one func here!
