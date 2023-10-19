@@ -44,6 +44,10 @@ void GenerateSignalPWM4Inverter(struct Frame& F)
 
     for (int i = 0; i < T; i++)
     {
+
+
+
+
         double s = (RAMPS_RES - 0.5) * (sin((double)i / (double)T * 2.0 * M_PI)) / (double)RAMPS_RES; //sine
         double r = (double(i % RAMPS_RES) / (double)RAMPS_RES); //ramp 0.0 to (RAMPS_RES-1)/RAMPS_RES
         r = 2.0 * (r < 0.5 ? r : 1.0 - r); // turn rump into triangle
